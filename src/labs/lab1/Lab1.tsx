@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { drawLineDDA, drawLineBresenham, drawLineWu, type Point } from '../../utils/lineDrawing';
+import {
+  drawLineDDA,
+  drawLineDDADebug,
+  drawLineBresenham,
+  drawLineBresenhamDebug,
+  drawLineWu,
+  type Point,
+  type StepInfo,
+} from '../../utils/lineDrawing';
 import './Lab1.css';
 
 type Algorithm = 'dda' | 'bresenham' | 'wu';
@@ -13,6 +21,12 @@ export function Lab1() {
   const [algorithm, setAlgorithm] = useState<Algorithm>('bresenham');
   const [startPoint, setStartPoint] = useState<Point | null>(null);
   const [endPoint, setEndPoint] = useState<Point | null>(null);
+
+  // Debug/step mode
+  const [showDebug, setShowDebug] = useState(false);
+  const [stepMode, setStepMode] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [allSteps, setAllSteps] = useState<StepInfo[]>([]);
 
   // Draw a single grid pixel (with padding)
   const drawPixel = (
@@ -62,10 +76,29 @@ export function Lab1() {
     if (endPoint) drawPixel(ctx, endPoint.x, endPoint.y, '#ff0000');
 
     if (startPoint && endPoint) {
-      let points: Point[] | Array<Point & { intensity: number }> = [];
-      if (algorithm === 'dda') points = drawLineDDA(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
-      else if (algorithm === 'bresenham') points = drawLineBresenham(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
-      else points = drawLineWu(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+      let points: Point[] | Array<Point & { intensity: number }> | StepInfo[] = [];
+
+      if (algorithm === 'dda') {
+        if (showDebug) {
+          points = drawLineDDADebug(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+        } else {
+          points = drawLineDDA(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+        }
+      } else if (algorithm === 'bresenham') {
+        if (showDebug) {
+          points = drawLineBresenhamDebug(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+        } else {
+          points = drawLineBresenham(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+        }
+      } else {
+        points = drawLineWu(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+      }
+
+      // In step mode, show only up to current step
+      if (stepMode && showDebug && points.length > 0) {
+        const stepPoints = (points as StepInfo[]).slice(0, currentStep + 1);
+        points = stepPoints.map(step => ({ x: step.x, y: step.y }));
+      }
 
       points.forEach((point) => {
         const p = point as Point & { intensity?: number };
@@ -76,7 +109,7 @@ export function Lab1() {
         }
       });
     }
-  }, [startPoint, endPoint, algorithm]);
+  }, [startPoint, endPoint, algorithm, showDebug, stepMode, currentStep]);
 
   // Convert mouse event to grid coordinates, accounting for canvas CSS scaling
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -97,9 +130,21 @@ export function Lab1() {
       setEndPoint(null);
     } else if (!endPoint) {
       setEndPoint({ x, y });
+      // Generate curve when endpoint is set
+      if (showDebug && algorithm !== 'wu') {
+        let points: StepInfo[] = [];
+        if (algorithm === 'dda') {
+          points = drawLineDDADebug(startPoint.x, startPoint.y, x, y);
+        } else if (algorithm === 'bresenham') {
+          points = drawLineBresenhamDebug(startPoint.x, startPoint.y, x, y);
+        }
+        setAllSteps(points);
+        setCurrentStep(0);
+      }
     } else {
       setStartPoint({ x, y });
       setEndPoint(null);
+      setCurrentStep(0);
     }
   };
 
@@ -170,6 +215,87 @@ export function Lab1() {
               <p>Ву — антиалиасинг по интенсивности соседних пикселей.</p>
             )}
           </div>
+
+          {/* Debug mode */}
+          <div className="control-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={showDebug}
+                onChange={(e) => {
+                  setShowDebug(e.target.checked);
+                  if (e.target.checked) {
+                    setStepMode(false);
+                  }
+                }}
+                disabled={algorithm === 'wu'}
+              />
+              Отладочный режим (Δi)
+            </label>
+          </div>
+
+          {/* Step mode */}
+          {showDebug && algorithm !== 'wu' && (
+            <>
+              <div className="control-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={stepMode}
+                    onChange={(e) => setStepMode(e.target.checked)}
+                  />
+                  Пошаговый режим
+                </label>
+              </div>
+
+              {stepMode && allSteps.length > 0 && (
+                <>
+                  <div className="control-group">
+                    <label>
+                      Шаг: <span className="value">{currentStep + 1} / {allSteps.length}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max={Math.max(0, allSteps.length - 1)}
+                      value={currentStep}
+                      onChange={(e) => setCurrentStep(Number(e.target.value))}
+                      className="slider"
+                    />
+                  </div>
+
+                  <div className="control-group">
+                    <button
+                      onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                      disabled={currentStep === 0}
+                    >
+                      ◀ Предыдущий
+                    </button>
+                    <button
+                      onClick={() => setCurrentStep(Math.min(allSteps.length - 1, currentStep + 1))}
+                      disabled={currentStep === allSteps.length - 1}
+                    >
+                      Следующий ▶
+                    </button>
+                  </div>
+
+                  {allSteps[currentStep] && (
+                    <div className="debug-info">
+                      <p>
+                        <strong>Точка:</strong> ({allSteps[currentStep].x}, {allSteps[currentStep].y})
+                      </p>
+                      <p>
+                        <strong>Δi:</strong> {allSteps[currentStep].deltaI.toFixed(2)}
+                      </p>
+                      <p>
+                        <strong>Шаг:</strong> {allSteps[currentStep].stepType === 'H' ? 'Горизонтальный' : allSteps[currentStep].stepType === 'V' ? 'Вертикальный' : 'Диагональный'}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
         </div>
 
         <div className="lab1-canvas-container">

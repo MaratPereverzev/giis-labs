@@ -6,12 +6,14 @@ import {
   drawEllipseBresenhamDebug,
   drawParabolaBresenham,
   drawParabolaBresenhamDebug,
+  drawHyperbolaBresenham,
+  drawHyperbolaBresenhamDebug,
   type Point,
   type StepInfo,
 } from '../../utils/secondOrderCurves';
 import './Lab2.css';
 
-type CurveType = 'circle' | 'ellipse' | 'parabola';
+type CurveType = 'circle' | 'ellipse' | 'parabola' | 'hyperbola';
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -30,6 +32,8 @@ export function Lab2() {
   const [ellipseA, setEllipseA] = useState(30);
   const [ellipseB, setEllipseB] = useState(20);
   const [parabolaP, setParabolaP] = useState(10);
+  const [hyperbolaA, setHyperbolaA] = useState(25);
+  const [hyperbolaB, setHyperbolaB] = useState(18);
 
   // Debug/step mode
   const [showDebug, setShowDebug] = useState(false);
@@ -97,6 +101,12 @@ export function Lab2() {
       } else {
         points = drawParabolaBresenham(centerPoint.x, centerPoint.y, parabolaP, maxLen);
       }
+    } else if (curveType === 'hyperbola') {
+      if (showDebug) {
+        points = drawHyperbolaBresenhamDebug(centerPoint.x, centerPoint.y, hyperbolaA, hyperbolaB);
+      } else {
+        points = drawHyperbolaBresenham(centerPoint.x, centerPoint.y, hyperbolaA, hyperbolaB);
+      }
     }
 
     if (showDebug) {
@@ -104,7 +114,7 @@ export function Lab2() {
     }
 
     return points;
-  }, [curveType, centerPoint, circleRadius, ellipseA, ellipseB, parabolaP, showDebug]);
+  }, [curveType, centerPoint, circleRadius, ellipseA, ellipseB, parabolaP, hyperbolaA, hyperbolaB, showDebug]);
 
   // Redraw the whole canvas
   const redraw = useCallback(() => {
@@ -208,6 +218,12 @@ export function Lab2() {
             >
               Парабола
             </button>
+            <button
+              className={`curve-btn ${curveType === 'hyperbola' ? 'active' : ''}`}
+              onClick={() => setCurveType('hyperbola')}
+            >
+              Гипербола
+            </button>
           </div>
         </div>
 
@@ -275,6 +291,38 @@ export function Lab2() {
               className="slider"
             />
           </div>
+        )}
+
+        {/* Hyperbola parameters */}
+        {curveType === 'hyperbola' && (
+          <>
+            <div className="control-group">
+              <label>
+                Полуось a (по x): <span className="value">{hyperbolaA}</span>
+              </label>
+              <input
+                type="range"
+                min="10"
+                max="80"
+                value={hyperbolaA}
+                onChange={(e) => setHyperbolaA(Number(e.target.value))}
+                className="slider"
+              />
+            </div>
+            <div className="control-group">
+              <label>
+                Полуось b (по y): <span className="value">{hyperbolaB}</span>
+              </label>
+              <input
+                type="range"
+                min="8"
+                max="60"
+                value={hyperbolaB}
+                onChange={(e) => setHyperbolaB(Number(e.target.value))}
+                className="slider"
+              />
+            </div>
+          </>
         )}
 
         {/* Debug mode */}

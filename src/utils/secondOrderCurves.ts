@@ -354,3 +354,85 @@ export function drawParabolaBresenhamDebug(
 
 	return steps;
 }
+// ============================================================
+// ГИПЕРБОЛА — целочисленный генератор ветвей
+// Уравнение: (x^2/a^2) - (y^2/b^2) = 1
+// Генерируем верхнюю и нижнюю ветви с 2-симметрией (слева и справа от центра).
+// Рекомендуемые значения: a ≈ 20-40 (полуось по x), b ≈ 15-30 (полуось по y).
+// ============================================================
+export function drawHyperbolaBresenham(
+	centerX: number,
+	centerY: number,
+	a: number,
+	b: number
+): Point[] {
+	const points: Point[] = [];
+
+	// Уравнение гиперболы: (x²/a²) - (y²/b²) = 1
+	// Из него: y = (b/a) * sqrt(x² - a²)
+	// Генерируем одну ветвь, потом используем симметрию
+
+	const maxX = Math.max(400, a + 100);
+	
+	for (let x = a; x < maxX; x++) {
+		// Вычисляем y для текущего x
+		const discriminant = x * x - a * a;
+		if (discriminant < 0) continue;
+
+		const y = Math.round((b / a) * Math.sqrt(discriminant));
+
+		// Добавляем 4 симметричные точки
+		points.push(
+			{ x: centerX + x, y: centerY - y },
+			{ x: centerX - x, y: centerY - y },
+			{ x: centerX + x, y: centerY + y },
+			{ x: centerX - x, y: centerY + y }
+		);
+	}
+
+	return points;
+}
+
+// Debug-версия гиперболы: возвращает шаги с Δi и типом шага
+export function drawHyperbolaBresenhamDebug(
+	centerX: number,
+	centerY: number,
+	a: number,
+	b: number
+): StepInfo[] {
+	const steps: StepInfo[] = [];
+
+	// Уравнение гиперболы: (x²/a²) - (y²/b²) = 1
+	// Из него: y = (b/a) * sqrt(x² - a²)
+
+	const maxX = Math.max(400, a + 100);
+	let prevY = 0;
+
+	for (let x = a; x < maxX; x++) {
+		const discriminant = x * x - a * a;
+		if (discriminant < 0) continue;
+
+		const y = Math.round((b / a) * Math.sqrt(discriminant));
+
+		// Вычисляем Δi: ошибка от идеального уравнения
+		// F(x, y) = b²x² - a²y² - a²b²
+		const a2 = a * a;
+		const b2 = b * b;
+		const deltaI = b2 * x * x - a2 * y * y - a2 * b2;
+
+		// Тип шага: если y изменился - диагональный, иначе горизонтальный
+		const stepType: 'H' | 'D' = y > prevY ? 'D' : 'H';
+
+		// Добавляем 4 симметричные точки
+		steps.push(
+			{ x: centerX + x, y: centerY - y, deltaI, stepType },
+			{ x: centerX - x, y: centerY - y, deltaI, stepType },
+			{ x: centerX + x, y: centerY + y, deltaI, stepType },
+			{ x: centerX - x, y: centerY + y, deltaI, stepType }
+		);
+
+		prevY = y;
+	}
+
+	return steps;
+}

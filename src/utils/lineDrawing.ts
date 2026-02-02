@@ -1,10 +1,18 @@
-// Point on pixel grid
+// Точка на пиксельной сетке
 export interface Point {
   x: number;
   y: number;
 }
 
-// DDA (Digital Differential Analyzer) - returns rounded pixel coordinates
+// Информация для пошагового режима отладки
+export interface StepInfo extends Point {
+  // целочисленное значение ошибки/решения (Δi или аналог)
+  deltaI: number;
+  // тип шага: горизонтальный (H), вертикальный (V) или диагональный (D)
+  stepType: 'H' | 'V' | 'D';
+}
+
+// DDA (Digital Differential Analyzer) — возвращает пиксели с округлением
 export function drawLineDDA(x0: number, y0: number, x1: number, y1: number): Point[] {
   const points: Point[] = [];
   const dx = x1 - x0;
@@ -30,7 +38,40 @@ export function drawLineDDA(x0: number, y0: number, x1: number, y1: number): Poi
   return points;
 }
 
-// Bresenham - integer rasterization
+// DDA debug-версия: возвращает шаги с информацией о Δi
+export function drawLineDDADebug(x0: number, y0: number, x1: number, y1: number): StepInfo[] {
+  const steps: StepInfo[] = [];
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const numSteps = Math.max(Math.abs(dx), Math.abs(dy));
+
+  if (numSteps === 0) {
+    steps.push({ x: x0, y: y0, deltaI: 0, stepType: 'H' });
+    return steps;
+  }
+
+  const xInc = dx / numSteps;
+  const yInc = dy / numSteps;
+  let x = x0;
+  let y = y0;
+
+  for (let i = 0; i <= numSteps; i++) {
+    const roundedX = Math.round(x);
+    const roundedY = Math.round(y);
+    const deltaI = Math.abs((x - roundedX) + (y - roundedY));
+    let stepType: 'H' | 'V' | 'D' = 'H';
+    if (Math.abs(yInc) > Math.abs(xInc)) stepType = Math.abs(yInc) > 0.5 ? 'V' : 'D';
+    else if (Math.abs(xInc) > 0.5) stepType = 'D';
+
+    steps.push({ x: roundedX, y: roundedY, deltaI, stepType });
+    x += xInc;
+    y += yInc;
+  }
+
+  return steps;
+}
+
+// Bresenham — целочисленная растеризация
 export function drawLineBresenham(x0: number, y0: number, x1: number, y1: number): Point[] {
   const points: Point[] = [];
   let x = x0;
@@ -59,7 +100,42 @@ export function drawLineBresenham(x0: number, y0: number, x1: number, y1: number
   return points;
 }
 
-// Wu (anti-aliasing) - produces pixels with intensity [0..1]
+// Bresenham debug-версия: возвращает шаги с решением Δi
+export function drawLineBresenhamDebug(x0: number, y0: number, x1: number, y1: number): StepInfo[] {
+  const steps: StepInfo[] = [];
+  let x = x0;
+  let y = y0;
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+
+  let err = dx - dy;
+
+  while (true) {
+    let stepType: 'H' | 'V' | 'D' = 'D';
+    if (dx === 0) stepType = 'V';
+    else if (dy === 0) stepType = 'H';
+
+    steps.push({ x, y, deltaI: err, stepType });
+
+    if (x === x1 && y === y1) break;
+
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y += sy;
+    }
+  }
+
+  return steps;
+}
+
+// Wu (anti-aliasing) — производит пиксели с интенсивностью [0..1]
 export function drawLineWu(x0: number, y0: number, x1: number, y1: number): Array<Point & { intensity: number }> {
   const points: Array<Point & { intensity: number }> = [];
   let steep = Math.abs(y1 - y0) > Math.abs(x1 - x0);
