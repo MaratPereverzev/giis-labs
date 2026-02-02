@@ -1,0 +1,94 @@
+.home-container {
+  min-height: 100vh;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.home-header {
+  text-align: center;
+  color: #333;
+  margin-bottom: 40px;
+}
+
+.home-header h1 {
+  display: none;
+}
+
+.home-header p {
+  display: none;
+}
+
+.labs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.lab-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 25px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: visible;
+  text-align: left;
+}
+
+.lab-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  border-color: #999;
+}
+
+.lab-card::before {
+  display: none;
+}
+
+.lab-number {
+  display: inline-block;
+  background: #e8e8e8;
+  color: #333;
+  padding: 6px 12px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.lab-card h3 {
+  margin: 12px 0 8px 0;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.lab-card p {
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lab-arrow {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .home-header h1 {
+    font-size: 2em;
+  }
+
+  .labs-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .lab-card {
+    padding: 20px;
+  }
+}

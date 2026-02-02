@@ -1,0 +1,159 @@
+.lab1-container {
+  width: 100%;
+}
+
+.lab1-container h1 {
+  margin-bottom: 20px;
+}
+
+.lab1-content {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 30px;
+}
+
+.lab1-panel {
+  background: #f5f5f5;
+  padding: 20px;
+  border-radius: 4px;
+  height: fit-content;
+  border: 1px solid #ddd;
+}
+
+.control-group {
+  margin-bottom: 25px;
+}
+
+.control-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 0.95em;
+}
+
+.algorithm-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.algo-btn {
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.algo-btn:hover {
+  background: #e8e8e8;
+  border-color: #999;
+}
+
+.algo-btn.active {
+  background: #333;
+  color: white;
+  border-color: #333;
+}
+
+.coordinates {
+  background: white;
+  padding: 12px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+.clear-btn {
+  width: 100%;
+  padding: 10px 12px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-bottom: 25px;
+}
+
+.clear-btn:hover {
+  background: #e0e0e0;
+  border-color: #999;
+}
+
+.algorithm-info {
+  background: white;
+  padding: 15px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  font-size: 0.85em;
+}
+
+.algorithm-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.95em;
+}
+
+.algorithm-info p {
+  margin: 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.lab1-canvas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lab1-canvas {
+  border: 1px solid #999;
+  background: #ffffff;
+  cursor: crosshair;
+  display: block;
+  width: 800px;
+  height: 600px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.canvas-hint {
+  font-size: 0.85em;
+  color: #999;
+  text-align: center;
+}
+
+@media (max-width: 1200px) {
+  .lab1-content {
+    grid-template-columns: 1fr;
+  }
+
+  .lab1-panel {
+    order: 2;
+  }
+
+  .lab1-canvas-container {
+    order: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .lab1-canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .algorithm-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .algo-btn {
+    flex: 1;
+    min-width: 80px;
+  }
+}
