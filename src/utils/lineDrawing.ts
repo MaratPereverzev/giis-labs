@@ -135,15 +135,35 @@ export function drawLineBresenhamDebug(x0: number, y0: number, x1: number, y1: n
   return steps;
 }
 
-// Wu (anti-aliasing) — производит пиксели с интенсивностью [0..1]
-export function drawLineWu(x0: number, y0: number, x1: number, y1: number): Array<Point & { intensity: number }> {
+// Вспомогательные функции для Wu алгоритма
+function fpart(x: number): number {
+  return x - Math.floor(x);
+}
+
+function rfpart(x: number): number {
+  return 1.0 - fpart(x);
+}
+
+// Wu algorithm with anti-aliasing (Xiaolin Wu)
+// Правильная реализация с учётом расстояния от линии до центра пикселя
+export function drawLineWu(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number
+): Array<Point & { intensity: number }> {
   const points: Array<Point & { intensity: number }> = [];
+  const pixelMap = new Map<string, number>();
+
   let steep = Math.abs(y1 - y0) > Math.abs(x1 - x0);
 
+  // Если линия более вертикальная, то транспонируем координаты
   if (steep) {
     [x0, y0] = [y0, x0];
     [x1, y1] = [y1, x1];
   }
+
+  // Убедимся, что x0 < x1
   if (x0 > x1) {
     [x0, x1] = [x1, x0];
     [y0, y1] = [y1, y0];
@@ -151,43 +171,70 @@ export function drawLineWu(x0: number, y0: number, x1: number, y1: number): Arra
 
   const dx = x1 - x0;
   const dy = y1 - y0;
-  const gradient = dx === 0 ? 0 : dy / dx;
+  const gradient = dx === 0 ? 1.0 : dy / dx;
 
-  for (let x = Math.round(x0); x <= Math.round(x1); x++) {
-    const y = y0 + gradient * (x - x0);
-    plotWuPoint(points, x, y, steep);
+  // ===== ПЕРВАЯ КОНЕЧНАЯ ТОЧКА =====
+  let xend = Math.round(x0);
+  let yend = y0 + gradient * (xend - x0);
+  let xgap = rfpart(x0 + 0.5); // расстояние от x начальной координаты до ближайшего пикселя
+  const xpxl1 = xend;
+  let ypxl1 = Math.floor(yend);
+
+  // Рисуем два вертикальных пикселя в первой конечной точке
+  plotWuPixel(pixelMap, xpxl1, ypxl1, steep, rfpart(yend) * xgap);
+  plotWuPixel(pixelMap, xpxl1, ypxl1 + 1, steep, fpart(yend) * xgap);
+
+  let intery = yend + gradient; // y-координата на следующей вертикали
+
+  // ===== ВТОРАЯ КОНЕЧНАЯ ТОЧКА =====
+  xend = Math.round(x1);
+  yend = y1 + gradient * (xend - x1);
+  xgap = fpart(x1 + 0.5);
+  const xpxl2 = xend;
+  let ypxl2 = Math.floor(yend);
+
+  // Рисуем два вертикальных пикселя во второй конечной точке
+  plotWuPixel(pixelMap, xpxl2, ypxl2, steep, rfpart(yend) * xgap);
+  plotWuPixel(pixelMap, xpxl2, ypxl2 + 1, steep, fpart(yend) * xgap);
+
+  // ===== ОСНОВНОЙ ЦИКЛ МЕЖДУ КОНЕЧНЫМИ ТОЧКАМИ =====
+  for (let x = xpxl1 + 1; x < xpxl2; x++) {
+    const y = Math.floor(intery);
+
+    // Рисуем два вертикальных пикселя
+    // Верхний пиксель получает интенсивность (1 - fractional_part)
+    plotWuPixel(pixelMap, x, y, steep, rfpart(intery));
+    // Нижний пиксель получает интенсивность fractional_part
+    plotWuPixel(pixelMap, x, y + 1, steep, fpart(intery));
+
+    intery += gradient;
   }
+
+  // Преобразуем карту в массив точек
+  pixelMap.forEach((intensity, key) => {
+    const [x, y] = key.split(',').map(Number);
+    points.push({ x, y, intensity });
+  });
 
   return points;
 }
 
-function fpart(x: number): number {
-  return x - Math.floor(x);
-}
-
-function rfpart(x: number): number {
-  return 1 - fpart(x);
-}
-
-// Plot two neighboring pixels with computed intensity
-function plotWuPoint(
-  points: Array<Point & { intensity: number }>,
+function plotWuPixel(
+  pixelMap: Map<string, number>,
   x: number,
   y: number,
-  steep: boolean
-) {
-  const xi = Math.round(x);
-  const yFloor = Math.floor(y);
-  const yFrac = fpart(y);
+  steep: boolean,
+  intensity: number
+): void {
+  // Пропускаем пиксели с очень малой интенсивностью
+  if (intensity < 0.15) return;
 
-  const p1: Point & { intensity: number } = steep
-    ? { x: yFloor, y: xi, intensity: rfpart(yFrac) }
-    : { x: xi, y: yFloor, intensity: rfpart(yFrac) };
+  // Если линия была транспонирована, то транспонируем координаты обратно
+  const px = steep ? y : x;
+  const py = steep ? x : y;
+  const key = `${px},${py}`;
 
-  const p2: Point & { intensity: number } = steep
-    ? { x: yFloor + 1, y: xi, intensity: fpart(yFrac) }
-    : { x: xi, y: yFloor + 1, intensity: fpart(yFrac) };
-
-  points.push(p1);
-  if (yFrac > 1e-3) points.push(p2);
+  // Сохраняем максимальную интенсивность для каждого пикселя
+  const current = pixelMap.get(key) || 0;
+  pixelMap.set(key, Math.max(current, intensity));
 }
