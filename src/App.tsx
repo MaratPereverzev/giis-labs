@@ -2,10 +2,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import Lab1 from './labs/lab1/Lab1';
 import Lab2 from './labs/lab2/Lab2';
 import Lab3 from './labs/lab3/Lab3';
+import Lab4 from './labs/lab4/Lab4';
 import type { Point } from './utils/lineDrawing';
 import './App.css';
 
-type Lab = 'none' | 'lab1' | 'lab2' | 'lab3';
+type Lab = 'none' | 'lab1' | 'lab2' | 'lab3' | 'lab4';
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -136,6 +137,13 @@ function App() {
             Лабораторная 3
             <span className="desc">Интерполяция</span>
           </button>
+          <button
+            className={`lab-btn ${activeLab === 'lab4' ? 'active' : ''}`}
+            onClick={() => setActiveLab('lab4')}
+          >
+            Лабораторная 4
+            <span className="desc">Геометрические преобразования</span>
+          </button>
         </div>
       </div>
 
@@ -151,7 +159,8 @@ function App() {
           />
           <p className="canvas-hint">
             {activeLab === 'none' && 'Выберите лабораторную работу слева'}
-            {activeLab !== 'none' && `Нажимайте на холст для добавления контрольных точек (${controlPoints.length})`}
+            {activeLab === 'lab4' && 'Загрузите 3D-объект и управляйте преобразованиями с клавиатуры (панель справа)'}
+            {activeLab !== 'none' && activeLab !== 'lab4' && `Нажимайте на холст для добавления контрольных точек (${controlPoints.length})`}
           </p>
         </div>
 
@@ -172,6 +181,7 @@ function App() {
           {activeLab === 'lab1' && <Lab1 controlPoints={controlPoints} onCurveApply={handleCurveApply} />}
           {activeLab === 'lab2' && <Lab2 controlPoints={controlPoints} onCurveApply={handleCurveApply} />}
           {activeLab === 'lab3' && <Lab3 controlPoints={controlPoints} onAlgorithmApply={handleCurveApply} />}
+          {activeLab === 'lab4' && <Lab4 />}
         </div>
       )}
     </div>

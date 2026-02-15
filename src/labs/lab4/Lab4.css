@@ -1,0 +1,127 @@
+/* Lab4 — Геометрические преобразования */
+.lab4-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lab4-view-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.lab4-perspective-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.lab4-perspective-badge.on {
+  background: #2ecc71;
+  color: #fff;
+}
+
+.lab4-perspective-badge.off {
+  background: #95a5a6;
+  color: #fff;
+}
+
+.lab4-offset-info {
+  color: #555;
+  font-family: ui-monospace, monospace;
+}
+
+.lab4-canvas-wrap {
+  position: relative;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.lab4-canvas-wrap:focus {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+}
+
+.lab4-canvas {
+  display: block;
+  width: 100%;
+}
+
+.lab4-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lab4-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lab4-file-row input[type="file"] {
+  font-size: 12px;
+}
+
+.lab4-info {
+  font-size: 12px;
+  color: #555;
+}
+
+.lab4-keys {
+  font-size: 11px;
+  color: #666;
+  background: #f5f5f5;
+  padding: 8px;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+
+.lab4-keys kbd {
+  background: #e0e0e0;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-family: inherit;
+}
+
+.lab4-perspective-hint {
+  font-size: 11px;
+  color: #555;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.lab4-perspective-hint code {
+  background: #eee;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 10px;
+}
+
+.lab4-params {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.lab4-params label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lab4-params input[type="range"] {
+  width: 120px;
+}
+
+.lab4-reset {
+  margin-top: 8px;
+}
