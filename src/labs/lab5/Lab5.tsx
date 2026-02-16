@@ -5,6 +5,7 @@ import {
   convexHullJarvis,
   segmentPolygonIntersections,
   pointInPolygon,
+  fillPolygonScanlineAET,
   type Point,
 } from '../../utils/polygonUtils';
 import { drawLineBresenham } from '../../utils/lineDrawing';
@@ -16,6 +17,7 @@ export interface Lab5Overlay {
   polygon: Point[];
   hull: Point[] | null;
   showNormals: boolean;
+  fillPolygon: boolean;
   testPoint: Point | null;
   pointInside: boolean | null;
   lineSegment: [Point, Point] | null;
@@ -40,6 +42,7 @@ export function Lab5({
   const [polygon, setPolygon] = useState<Point[]>([]);
   const [hull, setHull] = useState<Point[] | null>(null);
   const [showNormals, setShowNormals] = useState(false);
+  const [fillPolygon, setFillPolygon] = useState(false);
   const [hullMethod, setHullMethod] = useState<ConvexHullMethod>('graham');
   const [mode, setMode] = useState<Mode>(null);
   const [lineSegment, setLineSegment] = useState<[Point, Point] | null>(null);
@@ -55,6 +58,7 @@ export function Lab5({
       polygon,
       hull,
       showNormals,
+      fillPolygon,
       testPoint,
       pointInside,
       lineSegment,
@@ -64,6 +68,7 @@ export function Lab5({
     polygon,
     hull,
     showNormals,
+    fillPolygon,
     testPoint,
     pointInside,
     lineSegment,
@@ -200,6 +205,17 @@ export function Lab5({
               onChange={(e) => setShowNormals(e.target.checked)}
             />
             Показать внутренние нормали
+          </label>
+        </div>
+
+        <div className="control-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={fillPolygon}
+              onChange={(e) => setFillPolygon(e.target.checked)}
+            />
+            Заливка (AET + построчное сканирование)
           </label>
         </div>
 

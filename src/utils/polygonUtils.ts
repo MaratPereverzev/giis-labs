@@ -192,3 +192,82 @@ export function pointInPolygon(point: Point, polygon: Point[]): boolean {
   }
   return inside;
 }
+
+/** Элемент глобальной таблицы рёбер (GET) для алгоритма AET */
+interface ScanlineEdge {
+  yMin: number;
+  yMax: number;
+  xAtYMin: number;
+  dxPerScan: number;
+}
+
+/**
+ * Заполнение полигона методом построчного сканирования со списком активных рёбер (AET)
+ * и затравочным методом: на каждой сканирующей строке заполняются отрезки между парами
+ * пересечений с рёбрами полигона (внутренность — между нечётным и чётным пересечением).
+ * Возвращает массив координат пикселей (в сетке полигона) для заливки.
+ */
+export function fillPolygonScanlineAET(polygon: Point[]): Point[] {
+  const n = polygon.length;
+  if (n < 3) return [];
+
+  const pixels: Point[] = [];
+  const get: ScanlineEdge[] = [];
+
+  for (let i = 0; i < n; i++) {
+    const a = polygon[i];
+    const b = polygon[(i + 1) % n];
+    const y1 = Math.round(a.y);
+    const y2 = Math.round(b.y);
+    if (y1 === y2) continue; // горизонтальное ребро не участвует в AET
+    const yMin = Math.min(y1, y2);
+    const yMax = Math.max(y1, y2);
+    const xAtYMin = y1 < y2 ? a.x : b.x;
+    const dxPerScan = (b.x - a.x) / (b.y - a.y);
+    get.push({ yMin, yMax, xAtYMin, dxPerScan });
+  }
+
+  if (get.length === 0) return [];
+
+  const yMinGlobal = Math.min(...get.map((e) => e.yMin));
+  const yMaxGlobal = Math.max(...get.map((e) => e.yMax));
+
+  // Активный список рёбер (AET): обновляем на каждой строке сканирования
+  type AETEntry = { x: number; yMax: number; dxPerScan: number };
+  let aet: AETEntry[] = [];
+
+  for (let y = yMinGlobal; y <= yMaxGlobal; y++) {
+    // Добавить в AET рёбра, у которых yMin === y
+    for (const e of get) {
+      if (e.yMin === y) {
+        aet.push({
+          x: e.xAtYMin,
+          yMax: e.yMax,
+          dxPerScan: e.dxPerScan,
+        });
+      }
+    }
+
+    // Удалить из AET рёбра, у которых yMax === y (уже обработали последнюю строку ребра)
+    aet = aet.filter((e) => e.yMax > y);
+
+    // Сортировать AET по x (текущая координата пересечения с текущей строкой)
+    aet.sort((u, v) => u.x - v.x);
+
+    // Затравочное заполнение: между парами пересечений (x1,x2), (x3,x4), ...
+    for (let k = 0; k < aet.length - 1; k += 2) {
+      const xStart = Math.ceil(aet[k].x);
+      const xEnd = Math.floor(aet[k + 1].x);
+      for (let x = xStart; x <= xEnd; x++) {
+        pixels.push({ x, y });
+      }
+    }
+
+    // Обновить x для следующей строки: x += dxPerScan
+    for (const e of aet) {
+      e.x += e.dxPerScan;
+    }
+  }
+
+  return pixels;
+}
