@@ -3,10 +3,12 @@ import Lab1 from './labs/lab1/Lab1';
 import Lab2 from './labs/lab2/Lab2';
 import Lab3 from './labs/lab3/Lab3';
 import Lab4 from './labs/lab4/Lab4';
+import Lab5, { type Lab5Overlay } from './labs/lab5/Lab5';
 import type { Point } from './utils/lineDrawing';
+import { getInnerNormals } from './utils/polygonUtils';
 import './App.css';
 
-type Lab = 'none' | 'lab1' | 'lab2' | 'lab3' | 'lab4';
+type Lab = 'none' | 'lab1' | 'lab2' | 'lab3' | 'lab4' | 'lab5';
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -22,11 +24,13 @@ function App() {
   const [activeLab, setActiveLab] = useState<Lab>('none');
   const [controlPoints, setControlPoints] = useState<Point[]>([]);
   const [drawnCurves, setDrawnCurves] = useState<DrawnCurve[]>([]);
+  const [lab5Overlay, setLab5Overlay] = useState<Lab5Overlay | null>(null);
 
-  // Очистить точки при смене лабораторной работы
+  // Очистить точки и overlay при смене лабораторной работы
   useEffect(() => {
     setControlPoints([]);
     setDrawnCurves([]);
+    if (activeLab !== 'lab5') setLab5Overlay(null);
   }, [activeLab]);
 
   // Отрисовка холста
@@ -81,7 +85,72 @@ function App() {
               4, 0, Math.PI * 2);
       ctx.fill();
     });
-  }, [controlPoints, drawnCurves]);
+
+    // Лаба 5: полигон, выпуклая оболочка, нормали, точка, пересечения
+    if (activeLab === 'lab5' && lab5Overlay) {
+      const { polygon, hull, showNormals, testPoint, pointInside, intersections } = lab5Overlay;
+      const toX = (x: number) => x * PIXEL_SIZE + PIXEL_SIZE / 2;
+      const toY = (y: number) => y * PIXEL_SIZE + PIXEL_SIZE / 2;
+
+      if (polygon.length >= 2) {
+        ctx.strokeStyle = '#2980b9';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(toX(polygon[0].x), toY(polygon[0].y));
+        for (let i = 1; i < polygon.length; i++) {
+          ctx.lineTo(toX(polygon[i].x), toY(polygon[i].y));
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      if (hull && hull.length >= 2) {
+        ctx.strokeStyle = '#27ae60';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(toX(hull[0].x), toY(hull[0].y));
+        for (let i = 1; i < hull.length; i++) {
+          ctx.lineTo(toX(hull[i].x), toY(hull[i].y));
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      if (showNormals && polygon.length >= 3) {
+        const normals = getInnerNormals(polygon);
+        const len = 15;
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < polygon.length; i++) {
+          const a = polygon[i];
+          const b = polygon[(i + 1) % polygon.length];
+          const mx = (a.x + b.x) / 2;
+          const my = (a.y + b.y) / 2;
+          const n = normals[i];
+          ctx.beginPath();
+          ctx.moveTo(toX(mx), toY(my));
+          ctx.lineTo(toX(mx + n.x * len), toY(my + n.y * len));
+          ctx.stroke();
+        }
+      }
+
+      if (testPoint !== null) {
+        ctx.fillStyle = pointInside === true ? '#27ae60' : '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(toX(testPoint.x), toY(testPoint.y), 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      intersections.forEach((p) => {
+        ctx.fillStyle = '#f39c12';
+        ctx.beginPath();
+        ctx.arc(toX(p.x), toY(p.y), 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  }, [controlPoints, drawnCurves, activeLab, lab5Overlay]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -144,6 +213,13 @@ function App() {
             Лабораторная 4
             <span className="desc">Геометрические преобразования</span>
           </button>
+          <button
+            className={`lab-btn ${activeLab === 'lab5' ? 'active' : ''}`}
+            onClick={() => setActiveLab('lab5')}
+          >
+            Лабораторная 5
+            <span className="desc">Предварительная обработка полигонов</span>
+          </button>
         </div>
       </div>
 
@@ -160,7 +236,8 @@ function App() {
           <p className="canvas-hint">
             {activeLab === 'none' && 'Выберите лабораторную работу слева'}
             {activeLab === 'lab4' && 'Загрузите 3D-объект и управляйте преобразованиями с клавиатуры (панель справа)'}
-            {activeLab !== 'none' && activeLab !== 'lab4' && `Нажимайте на холст для добавления контрольных точек (${controlPoints.length})`}
+            {activeLab === 'lab5' && 'Выберите режим справа: добавление полигона, отрезок или точка. Кликайте по холсту.'}
+            {activeLab !== 'none' && activeLab !== 'lab4' && activeLab !== 'lab5' && `Нажимайте на холст для добавления контрольных точек (${controlPoints.length})`}
           </p>
         </div>
 
@@ -182,6 +259,14 @@ function App() {
           {activeLab === 'lab2' && <Lab2 controlPoints={controlPoints} onCurveApply={handleCurveApply} />}
           {activeLab === 'lab3' && <Lab3 controlPoints={controlPoints} onAlgorithmApply={handleCurveApply} />}
           {activeLab === 'lab4' && <Lab4 />}
+          {activeLab === 'lab5' && (
+            <Lab5
+              controlPoints={controlPoints}
+              setControlPoints={setControlPoints}
+              onCurveApply={handleCurveApply}
+              setLab5Overlay={setLab5Overlay}
+            />
+          )}
         </div>
       )}
     </div>

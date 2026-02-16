@@ -109,7 +109,7 @@ export default function Lab4() {
 
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
-  const [tz, setTz] = useState(0);
+  const [tz, setTz] = useState(3);
   const [rotX, setRotX] = useState(0);
   const [rotY, setRotY] = useState(0);
   const [rotZ, setRotZ] = useState(0);
@@ -238,7 +238,7 @@ export default function Lab4() {
   const resetTransform = () => {
     setTx(0);
     setTy(0);
-    setTz(0);
+    setTz(3);
     setRotX(0);
     setRotY(0);
     setRotZ(0);

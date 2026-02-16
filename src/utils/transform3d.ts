@@ -118,14 +118,15 @@ export function reflectionYZ(): Mat4 {
 
 /**
  * Perspective projection matrix (1.29). d = distance to projection plane.
- * After applying, divide by w to get NDC; then x', y' are on the projection plane.
+ * Row-vector convention: v' = v * M, so w' = v[2]*M[2][3] + v[3]*M[3][3] = z/d.
+ * After applying, divide by w to get NDC; then x'/w, y'/w are on the projection plane.
  */
 export function perspective(d: number): Mat4 {
   return [
     [1, 0, 0, 0],
     [0, 1, 0, 0],
-    [0, 0, 1, 0],
-    [0, 0, 1 / d, 0],
+    [0, 0, 1, 1 / d],
+    [0, 0, 0, 0],
   ];
 }
 
