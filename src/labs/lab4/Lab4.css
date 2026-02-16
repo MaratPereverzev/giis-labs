@@ -34,23 +34,23 @@
   font-family: ui-monospace, monospace;
 }
 
-.lab4-canvas-wrap {
-  position: relative;
-  background: #fff;
-  border: 1px solid #ccc;
+.lab4-focus-wrap {
+  padding: 12px;
+  background: #e8f4fc;
+  border: 1px solid #3498db;
   border-radius: 4px;
-  overflow: hidden;
   cursor: pointer;
 }
 
-.lab4-canvas-wrap:focus {
+.lab4-focus-wrap:focus {
   outline: 2px solid #3498db;
   outline-offset: 2px;
 }
 
-.lab4-canvas {
+.lab4-focus-hint {
+  font-size: 12px;
+  color: #2c3e50;
   display: block;
-  width: 100%;
 }
 
 .lab4-controls {

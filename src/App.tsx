@@ -33,10 +33,11 @@ function App() {
     if (activeLab !== 'lab5') setLab5Overlay(null);
   }, [activeLab]);
 
-  // Отрисовка холста
+  // Отрисовка холста (для лабы 4 рисует сам Lab4 на этом же холсте)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    if (activeLab === 'lab4') return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -153,6 +154,7 @@ function App() {
   }, [controlPoints, drawnCurves, activeLab, lab5Overlay]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (activeLab === 'lab4') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -258,7 +260,13 @@ function App() {
           {activeLab === 'lab1' && <Lab1 controlPoints={controlPoints} onCurveApply={handleCurveApply} />}
           {activeLab === 'lab2' && <Lab2 controlPoints={controlPoints} onCurveApply={handleCurveApply} />}
           {activeLab === 'lab3' && <Lab3 controlPoints={controlPoints} onAlgorithmApply={handleCurveApply} />}
-          {activeLab === 'lab4' && <Lab4 />}
+          {activeLab === 'lab4' && (
+            <Lab4
+              mainCanvasRef={canvasRef}
+              canvasWidth={CANVAS_WIDTH}
+              canvasHeight={CANVAS_HEIGHT}
+            />
+          )}
           {activeLab === 'lab5' && (
             <Lab5
               controlPoints={controlPoints}

@@ -20,8 +20,11 @@ import {
 type Point2D = { x: number; y: number; z: number };
 import './Lab4.css';
 
-const CANVAS_W = 280;
-const CANVAS_H = 210;
+interface Lab4Props {
+  mainCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  canvasWidth: number;
+  canvasHeight: number;
+}
 
 /** Default cube: vertices and edges (indices). */
 const DEFAULT_CUBE: { vertices: Vec3[]; edges: [number, number][] } = {
@@ -100,8 +103,7 @@ function buildCompositeMatrix(
   return M;
 }
 
-export default function Lab4() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export default function Lab4({ mainCanvasRef, canvasWidth, canvasHeight }: Lab4Props) {
   const focusWrapRef = useRef<HTMLDivElement>(null);
   const [vertices, setVertices] = useState<Vec3[]>(DEFAULT_CUBE.vertices);
   const [edges, setEdges] = useState<[number, number][]>(DEFAULT_CUBE.edges);
@@ -251,9 +253,9 @@ export default function Lab4() {
     setUsePerspective(false);
   };
 
-  // Draw
+  // Draw on main canvas
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = mainCanvasRef.current;
     if (!canvas || vertices.length === 0) return;
 
     const ctx = canvas.getContext('2d');
@@ -265,10 +267,10 @@ export default function Lab4() {
       ? transformed.map((p) => ({ x: p.x, y: p.y, z: p.z }))
       : transformed.map((p) => projectTo2D(p, 0));
 
-    // Фиксированные масштаб и центр — иначе перенос и масштаб визуально пропадают
-    const VIEW_SCALE = 55;
-    const cx = CANVAS_W / 2;
-    const cy = CANVAS_H / 2;
+    // Масштаб и центр под размер главного холста
+    const VIEW_SCALE = Math.min(canvasWidth, canvasHeight) * 0.08;
+    const cx = canvasWidth / 2;
+    const cy = canvasHeight / 2;
 
     function toScreen(px: number, py: number) {
       return {
@@ -278,7 +280,7 @@ export default function Lab4() {
     }
 
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     ctx.strokeStyle = '#1a1a1a';
     ctx.lineWidth = 2;
@@ -298,7 +300,7 @@ export default function Lab4() {
       ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
       ctx.fill();
     }
-  }, [vertices, edges, buildMatrix, usePerspective, perspectiveDist]);
+  }, [vertices, edges, buildMatrix, usePerspective, perspectiveDist, mainCanvasRef, canvasWidth, canvasHeight]);
 
   return (
     <div className="lab4-container">
@@ -332,7 +334,7 @@ export default function Lab4() {
           </label>
         </div>
         <div className="lab4-keys">
-          <strong>Клавиши</strong> (сначала кликните по области 3D ниже):<br />
+          <strong>Клавиши</strong> (кликните по блоку ниже для фокуса, 3D — на главном холсте слева):<br />
           <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> — перемещение по X, Y; <kbd>Q</kbd>/<kbd>A</kbd> — по Z<br />
           <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> — поворот вокруг X, Y, Z<br />
           <kbd>4</kbd>/<kbd>5</kbd> — масштаб +/–<br />
@@ -358,20 +360,15 @@ export default function Lab4() {
       </div>
       <div
         ref={focusWrapRef}
-        className="lab4-canvas-wrap"
+        className="lab4-focus-wrap"
         tabIndex={0}
         role="application"
-        aria-label="3D вид: кликните и используйте стрелки, 1-8, Q, A, P"
+        aria-label="Управление 3D: кликните сюда и используйте стрелки, 1-8, Q, A, P"
         onClick={() => focusWrapRef.current?.focus()}
         onKeyDown={handleKeyDown}
         title="Кликните сюда, затем управляйте стрелками и клавишами 1–8, Q, A, P"
       >
-        <canvas
-          ref={canvasRef}
-          className="lab4-canvas"
-          width={CANVAS_W}
-          height={CANVAS_H}
-        />
+        <span className="lab4-focus-hint">Кликните сюда для управления с клавиатуры. 3D-объект отображается на главном холсте.</span>
       </div>
     </div>
   );
