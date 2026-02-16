@@ -5,7 +5,7 @@ import Lab3 from './labs/lab3/Lab3';
 import Lab4 from './labs/lab4/Lab4';
 import Lab5, { type Lab5Overlay } from './labs/lab5/Lab5';
 import type { Point } from './utils/lineDrawing';
-import { getInnerNormals } from './utils/polygonUtils';
+import { getInnerNormals, fillPolygonScanlineAET } from './utils/polygonUtils';
 import './App.css';
 
 type Lab = 'none' | 'lab1' | 'lab2' | 'lab3' | 'lab4' | 'lab5';
@@ -87,11 +87,19 @@ function App() {
       ctx.fill();
     });
 
-    // Лаба 5: полигон, выпуклая оболочка, нормали, точка, пересечения
+    // Лаба 5: полигон, выпуклая оболочка, нормали, заливка, точка, пересечения
     if (activeLab === 'lab5' && lab5Overlay) {
-      const { polygon, hull, showNormals, testPoint, pointInside, intersections } = lab5Overlay;
+      const { polygon, hull, showNormals, fillPolygon, testPoint, pointInside, intersections } = lab5Overlay;
       const toX = (x: number) => x * PIXEL_SIZE + PIXEL_SIZE / 2;
       const toY = (y: number) => y * PIXEL_SIZE + PIXEL_SIZE / 2;
+
+      if (fillPolygon && polygon.length >= 3) {
+        const fillPixels = fillPolygonScanlineAET(polygon);
+        ctx.fillStyle = 'rgba(41, 128, 185, 0.35)';
+        fillPixels.forEach((p) => {
+          ctx.fillRect(p.x * PIXEL_SIZE, p.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+        });
+      }
 
       if (polygon.length >= 2) {
         ctx.strokeStyle = '#2980b9';
