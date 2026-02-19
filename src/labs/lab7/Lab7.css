@@ -1,0 +1,189 @@
+.lab7-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.lab7-panel h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: #333;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+}
+
+/* Tabs */
+.lab7-tabs {
+  display: flex;
+  gap: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #3498db;
+}
+
+.lab7-tab {
+  flex: 1;
+  padding: 8px 6px;
+  background: #fff;
+  color: #3498db;
+  border: none;
+  cursor: pointer;
+  font-size: 0.88em;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lab7-tab:not(:last-child) {
+  border-right: 1px solid #3498db;
+}
+
+.lab7-tab.active {
+  background: #3498db;
+  color: #fff;
+}
+
+.lab7-tab:not(.active):hover {
+  background: #ebf5fb;
+}
+
+/* Section */
+.lab7-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Hint text */
+.lab7-hint {
+  font-size: 0.85em;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Draw-mode toggle buttons */
+.lab7-mode-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.lab7-mode-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: #ecf0f1;
+  color: #333;
+  border: 1px solid #bdc3c7;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.88em;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lab7-mode-btn.active {
+  background: #2980b9;
+  color: #fff;
+  border-color: #2980b9;
+}
+
+.lab7-mode-btn:not(.active):hover {
+  background: #d5dbdb;
+}
+
+/* Select dropdown */
+.lab7-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #bdc3c7;
+  border-radius: 3px;
+  font-size: 0.9em;
+  margin-top: 4px;
+  background: #fff;
+}
+
+/* Status box */
+.lab7-status {
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 3px;
+  border-left: 3px solid #3498db;
+  font-size: 0.9em;
+}
+
+.lab7-status p {
+  margin: 4px 0;
+}
+
+/* Action buttons row */
+.lab7-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lab7-clear-btn {
+  background: #e74c3c !important;
+}
+
+.lab7-clear-btn:hover {
+  background: #c0392b !important;
+}
+
+/* Arrow-key hint block */
+.lab7-key-hint {
+  background: #eaf4fd;
+  border: 1px solid #aed6f1;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 0.88em;
+  color: #1a5276;
+}
+
+.lab7-key-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 0.95em;
+  font-family: inherit;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  color: #333;
+}
+
+/* Reset button */
+.lab7-reset-btn {
+  background: #7f8c8d !important;
+}
+.lab7-reset-btn:hover {
+  background: #626567 !important;
+}
+
+/* Legend */
+.lab7-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.83em;
+  color: #555;
+  padding: 6px 10px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.lab7-legend-vis {
+  color: #1a5276;
+  font-weight: 600;
+}
+
+.lab7-legend-hid {
+  color: #7f8c8d;
+}

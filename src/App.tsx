@@ -5,11 +5,12 @@ import Lab3 from './labs/lab3/Lab3';
 import Lab4 from './labs/lab4/Lab4';
 import Lab5, { type Lab5Overlay } from './labs/lab5/Lab5';
 import Lab6, { type Lab6Overlay } from './labs/lab6/Lab6';
+import Lab7, { type Lab7Overlay } from './labs/lab7/Lab7';
 import type { Point } from './utils/lineDrawing';
 import { getInnerNormals, fillPolygonScanlineAET } from './utils/polygonUtils';
 import './App.css';
 
-type Lab = 'none' | 'lab1' | 'lab2' | 'lab3' | 'lab4' | 'lab5' | 'lab6';
+type Lab = 'none' | 'lab1' | 'lab2' | 'lab3' | 'lab4' | 'lab5' | 'lab6' | 'lab7';
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -27,6 +28,7 @@ function App() {
   const [drawnCurves, setDrawnCurves] = useState<DrawnCurve[]>([]);
   const [lab5Overlay, setLab5Overlay] = useState<Lab5Overlay | null>(null);
   const [lab6Overlay, setLab6Overlay] = useState<Lab6Overlay | null>(null);
+  const [lab7Overlay, setLab7Overlay] = useState<Lab7Overlay | null>(null);
 
   // Очистить точки и overlay при смене лабораторной работы
   useEffect(() => {
@@ -34,6 +36,7 @@ function App() {
     setDrawnCurves([]);
     if (activeLab !== 'lab5') setLab5Overlay(null);
     if (activeLab !== 'lab6') setLab6Overlay(null);
+    if (activeLab !== 'lab7') setLab7Overlay(null);
   }, [activeLab]);
 
   // Отрисовка холста (для лабы 4 рисует сам Lab4 на этом же холсте)
@@ -80,8 +83,8 @@ function App() {
       });
     }
 
-    // Отрисовка контрольных точек (без номеров), кроме lab6 — там точки рисуются в блоке lab6
-    if (activeLab !== 'lab6') {
+    // Отрисовка контрольных точек (без номеров), кроме lab6/lab7 — там точки рисуются в своих блоках
+    if (activeLab !== 'lab6' && activeLab !== 'lab7') {
       controlPoints.forEach((point) => {
         ctx.fillStyle = '#0066cc';
         ctx.beginPath();
@@ -259,10 +262,139 @@ function App() {
         ctx.fill();
       });
     }
-  }, [controlPoints, drawnCurves, activeLab, lab5Overlay, lab6Overlay]);
+
+    // Лаба 7: 2D отсечение и 3D алгоритм Робертса
+    if (activeLab === 'lab7' && lab7Overlay) {
+      const toX = (x: number) => x * PIXEL_SIZE + PIXEL_SIZE / 2;
+      const toY = (y: number) => y * PIXEL_SIZE + PIXEL_SIZE / 2;
+
+      if (lab7Overlay.mode === '2d') {
+        const { inputSegments, clippingWindow, clippedSegments, pendingPoint, drawMode } = lab7Overlay;
+
+        // Draw clipping window rectangle
+        if (clippingWindow) {
+          ctx.strokeStyle = '#e67e22';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 3]);
+          ctx.strokeRect(
+            toX(clippingWindow.x1) - PIXEL_SIZE / 2,
+            toY(clippingWindow.y1) - PIXEL_SIZE / 2,
+            (clippingWindow.x2 - clippingWindow.x1) * PIXEL_SIZE,
+            (clippingWindow.y2 - clippingWindow.y1) * PIXEL_SIZE,
+          );
+          ctx.setLineDash([]);
+        }
+
+        // Draw input segments (original, grey dashed)
+        ctx.strokeStyle = '#95a5a6';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        for (const seg of inputSegments) {
+          ctx.beginPath();
+          ctx.moveTo(toX(seg.start.x), toY(seg.start.y));
+          ctx.lineTo(toX(seg.end.x), toY(seg.end.y));
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Draw clipped (visible) portions in green
+        if (clippedSegments.length > 0) {
+          ctx.strokeStyle = '#27ae60';
+          ctx.lineWidth = 3;
+          for (const seg of clippedSegments) {
+            ctx.beginPath();
+            ctx.moveTo(toX(seg.start.x), toY(seg.start.y));
+            ctx.lineTo(toX(seg.end.x), toY(seg.end.y));
+            ctx.stroke();
+          }
+        }
+
+        // Draw control points (segment endpoints)
+        if (drawMode === 'segment') {
+          for (let i = 0; i < controlPoints.length; i++) {
+            const p = controlPoints[i];
+            ctx.fillStyle = i % 2 === 0 ? '#2980b9' : '#8e44ad';
+            ctx.beginPath();
+            ctx.arc(toX(p.x), toY(p.y), 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // Draw pending first-click indicator
+        if (pendingPoint) {
+          ctx.strokeStyle = '#e74c3c';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.arc(toX(pendingPoint.x), toY(pendingPoint.y), 6, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Draw window corner indicators
+        if (drawMode === 'window' && controlPoints.length >= 1) {
+          controlPoints.slice(0, 2).forEach((p) => {
+            ctx.fillStyle = '#e67e22';
+            ctx.beginPath();
+            ctx.arc(toX(p.x), toY(p.y), 5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      }
+
+      if (lab7Overlay.mode === '3d' && lab7Overlay.cube3d) {
+        const { projectedFaces, showHidden } = lab7Overlay.cube3d;
+        const toCX = (gx: number) => gx * PIXEL_SIZE + PIXEL_SIZE / 2;
+        const toCY = (gy: number) => gy * PIXEL_SIZE + PIXEL_SIZE / 2;
+
+        const tracePath = (points: { x: number; y: number }[]) => {
+          ctx.beginPath();
+          ctx.moveTo(toCX(points[0].x), toCY(points[0].y));
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(toCX(points[i].x), toCY(points[i].y));
+          }
+          ctx.closePath();
+        };
+
+        // 1. Fill visible faces (light blue tint) — drawn first so strokes go on top
+        for (const face of projectedFaces) {
+          if (!face.visible) continue;
+          tracePath(face.points);
+          ctx.fillStyle = 'rgba(52, 152, 219, 0.18)';
+          ctx.fill();
+        }
+
+        // 2. Hidden face edges — dashed grey, drawn under solid outlines
+        if (showHidden) {
+          ctx.strokeStyle = '#aab7c0';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 4]);
+          for (const face of projectedFaces) {
+            if (face.visible) continue;
+            tracePath(face.points);
+            ctx.stroke();
+          }
+          ctx.setLineDash([]);
+        }
+
+        // 3. Visible face outlines — solid blue on top
+        ctx.strokeStyle = '#2471a3';
+        ctx.lineWidth = 2.5;
+        for (const face of projectedFaces) {
+          if (!face.visible) continue;
+          tracePath(face.points);
+          ctx.stroke();
+        }
+
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+      }
+    }
+  }, [controlPoints, drawnCurves, activeLab, lab5Overlay, lab6Overlay, lab7Overlay]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (activeLab === 'lab4') return;
+    if (activeLab === 'lab7' && lab7Overlay?.mode === '3d') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -275,7 +407,13 @@ function App() {
     const y = Math.round(canvasY / PIXEL_SIZE - 0.5);
 
     if (x >= 0 && x < CANVAS_WIDTH / PIXEL_SIZE && y >= 0 && y < CANVAS_HEIGHT / PIXEL_SIZE) {
-      setControlPoints([...controlPoints, { x, y }]);
+      // In Lab7 window mode keep only the last 2 points (re-define the window)
+      if (activeLab === 'lab7' && lab7Overlay?.drawMode === 'window') {
+        const existing = controlPoints.length >= 2 ? [] : controlPoints;
+        setControlPoints([...existing, { x, y }]);
+      } else {
+        setControlPoints([...controlPoints, { x, y }]);
+      }
     }
   };
 
@@ -337,6 +475,13 @@ function App() {
             Лабораторная 6
             <span className="desc">Делоне и Вороного</span>
           </button>
+          <button
+            className={`lab-btn ${activeLab === 'lab7' ? 'active' : ''}`}
+            onClick={() => setActiveLab('lab7')}
+          >
+            Лабораторная 7
+            <span className="desc">Отсечение и видимость</span>
+          </button>
         </div>
       </div>
 
@@ -356,6 +501,12 @@ function App() {
             {activeLab === 'lab5' && 'Выберите режим справа: добавление полигона, отрезок или точка. Кликайте по холсту.'}
             {activeLab !== 'none' && activeLab !== 'lab4' && activeLab !== 'lab5' && activeLab !== 'lab6' && `Нажимайте на холст для добавления контрольных точек (${controlPoints.length})`}
             {activeLab === 'lab6' && 'Расставьте минимум 3 точки, затем нажмите кнопку Делоне или Вороного в панели справа.'}
+            {activeLab === 'lab7' && lab7Overlay?.mode !== '3d' && (
+              lab7Overlay?.drawMode === 'window'
+                ? 'Кликните 2 точки для задания окна отсечения.'
+                : 'Кликайте для добавления отрезков (нечётный клик — начало, чётный — конец).'
+            )}
+            {activeLab === 'lab7' && lab7Overlay?.mode === '3d' && 'Используйте стрелки ↑↓←→ для вращения куба. Синие грани — видимые, пунктир — скрытые рёбра.'}
           </p>
         </div>
 
@@ -395,6 +546,13 @@ function App() {
             <Lab6
               controlPoints={controlPoints}
               setLab6Overlay={setLab6Overlay}
+            />
+          )}
+          {activeLab === 'lab7' && (
+            <Lab7
+              controlPoints={controlPoints}
+              setControlPoints={setControlPoints}
+              setLab7Overlay={setLab7Overlay}
             />
           )}
         </div>
