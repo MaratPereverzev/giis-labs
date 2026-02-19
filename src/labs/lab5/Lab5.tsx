@@ -5,7 +5,6 @@ import {
   convexHullJarvis,
   segmentPolygonIntersections,
   pointInPolygon,
-  fillPolygonScanlineAET,
   type Point,
 } from '../../utils/polygonUtils';
 import { drawLineBresenham } from '../../utils/lineDrawing';

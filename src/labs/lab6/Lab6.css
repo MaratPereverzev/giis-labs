@@ -1,0 +1,68 @@
+.lab6-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.lab6-panel h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: #333;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+}
+
+.lab6-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lab6-buttons .apply-btn {
+  width: 100%;
+}
+
+.lab6-buttons .apply-btn.voronoi {
+  background: #8e44ad;
+}
+
+.lab6-buttons .apply-btn.voronoi:hover {
+  background: #7d3c98;
+}
+
+.lab6-hint {
+  font-size: 0.85em;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.lab6-status {
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 3px;
+  border-left: 3px solid #3498db;
+  font-size: 0.9em;
+}
+
+.lab6-status p {
+  margin: 4px 0;
+}
+
+.lab6-panel .nav-btn {
+  padding: 6px 10px;
+  font-size: 0.9em;
+}
+
+.lab6-debug-step-info {
+  background: #fffbe6;
+  border: 1px solid #e6d98a;
+  padding: 10px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  margin-top: 8px;
+}
+
+.lab6-debug-step-info p {
+  margin: 4px 0;
+}

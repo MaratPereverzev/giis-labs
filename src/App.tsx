@@ -4,11 +4,12 @@ import Lab2 from './labs/lab2/Lab2';
 import Lab3 from './labs/lab3/Lab3';
 import Lab4 from './labs/lab4/Lab4';
 import Lab5, { type Lab5Overlay } from './labs/lab5/Lab5';
+import Lab6, { type Lab6Overlay } from './labs/lab6/Lab6';
 import type { Point } from './utils/lineDrawing';
 import { getInnerNormals, fillPolygonScanlineAET } from './utils/polygonUtils';
 import './App.css';
 
-type Lab = 'none' | 'lab1' | 'lab2' | 'lab3' | 'lab4' | 'lab5';
+type Lab = 'none' | 'lab1' | 'lab2' | 'lab3' | 'lab4' | 'lab5' | 'lab6';
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -25,12 +26,14 @@ function App() {
   const [controlPoints, setControlPoints] = useState<Point[]>([]);
   const [drawnCurves, setDrawnCurves] = useState<DrawnCurve[]>([]);
   const [lab5Overlay, setLab5Overlay] = useState<Lab5Overlay | null>(null);
+  const [lab6Overlay, setLab6Overlay] = useState<Lab6Overlay | null>(null);
 
   // Очистить точки и overlay при смене лабораторной работы
   useEffect(() => {
     setControlPoints([]);
     setDrawnCurves([]);
     if (activeLab !== 'lab5') setLab5Overlay(null);
+    if (activeLab !== 'lab6') setLab6Overlay(null);
   }, [activeLab]);
 
   // Отрисовка холста (для лабы 4 рисует сам Lab4 на этом же холсте)
@@ -77,15 +80,17 @@ function App() {
       });
     }
 
-    // Отрисовка контрольных точек (без номеров)
-    controlPoints.forEach((point) => {
-      ctx.fillStyle = '#0066cc';
-      ctx.beginPath();
-      ctx.arc(point.x * PIXEL_SIZE + PIXEL_SIZE / 2, 
-              point.y * PIXEL_SIZE + PIXEL_SIZE / 2, 
-              4, 0, Math.PI * 2);
-      ctx.fill();
-    });
+    // Отрисовка контрольных точек (без номеров), кроме lab6 — там точки рисуются в блоке lab6
+    if (activeLab !== 'lab6') {
+      controlPoints.forEach((point) => {
+        ctx.fillStyle = '#0066cc';
+        ctx.beginPath();
+        ctx.arc(point.x * PIXEL_SIZE + PIXEL_SIZE / 2,
+                point.y * PIXEL_SIZE + PIXEL_SIZE / 2,
+                4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
 
     // Лаба 5: полигон, выпуклая оболочка, нормали, заливка, точка, пересечения
     if (activeLab === 'lab5' && lab5Overlay) {
@@ -159,7 +164,102 @@ function App() {
         ctx.fill();
       });
     }
-  }, [controlPoints, drawnCurves, activeLab, lab5Overlay]);
+
+    // Лаба 6: точки, триангуляция Делоне, диаграмма Вороного, отладочные шаги
+    if (activeLab === 'lab6' && lab6Overlay) {
+      const toX = (x: number) => x * PIXEL_SIZE + PIXEL_SIZE / 2;
+      const toY = (y: number) => y * PIXEL_SIZE + PIXEL_SIZE / 2;
+      const { points: lab6Points, triangles: lab6Triangles, voronoiEdges: lab6Voronoi, debug } = lab6Overlay;
+
+      // Заливка областей Вороного ближайшей точкой (только для режима Вороного)
+      if (lab6Overlay.kind === 'voronoi' && lab6Points.length > 0) {
+        const palette = lab6Points.map(
+          (_, i) => `hsl(${Math.round((i / lab6Points.length) * 360)}, 65%, 75%)`
+        );
+        const cols = CANVAS_WIDTH / PIXEL_SIZE;
+        const rows = CANVAS_HEIGHT / PIXEL_SIZE;
+        for (let cy = 0; cy < rows; cy++) {
+          for (let cx = 0; cx < cols; cx++) {
+            let minD = Infinity;
+            let minIdx = 0;
+            for (let pi = 0; pi < lab6Points.length; pi++) {
+              const d = Math.hypot(cx - lab6Points[pi].x, cy - lab6Points[pi].y);
+              if (d < minD) { minD = d; minIdx = pi; }
+            }
+            ctx.fillStyle = palette[minIdx];
+            ctx.fillRect(cx * PIXEL_SIZE, cy * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+          }
+        }
+        // Перерисовать сетку поверх заливки
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= CANVAS_WIDTH; x += PIXEL_SIZE) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_HEIGHT); ctx.stroke();
+        }
+        for (let y = 0; y <= CANVAS_HEIGHT; y += PIXEL_SIZE) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CANVAS_WIDTH, y); ctx.stroke();
+        }
+      }
+
+      if (lab6Triangles.length > 0) {
+        ctx.strokeStyle = '#2980b9';
+        ctx.lineWidth = 2;
+        for (const tri of lab6Triangles) {
+          ctx.beginPath();
+          ctx.moveTo(toX(tri[0].x), toY(tri[0].y));
+          ctx.lineTo(toX(tri[1].x), toY(tri[1].y));
+          ctx.lineTo(toX(tri[2].x), toY(tri[2].y));
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+
+      if (lab6Voronoi.length > 0) {
+        ctx.strokeStyle = '#8e44ad';
+        ctx.lineWidth = 2;
+        for (const e of lab6Voronoi) {
+          ctx.beginPath();
+          ctx.moveTo(toX(e.start.x), toY(e.start.y));
+          ctx.lineTo(toX(e.end.x), toY(e.end.y));
+          ctx.stroke();
+        }
+      }
+
+      if (debug?.stepMode && debug.kind === 'delaunay' && debug.delaunaySteps[debug.currentStepIndex]) {
+        const step = debug.delaunaySteps[debug.currentStepIndex] as import('./utils/delaunay').DelaunayStep;
+        if (step.circumcenter && step.circumRadius != null) {
+          ctx.strokeStyle = 'rgba(231, 76, 60, 0.8)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.arc(toX(step.circumcenter.x), toY(step.circumcenter.y), step.circumRadius * PIXEL_SIZE, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        if (step.currentEdge) {
+          ctx.strokeStyle = '#e74c3c';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(toX(step.currentEdge.a.x), toY(step.currentEdge.a.y));
+          ctx.lineTo(toX(step.currentEdge.b.x), toY(step.currentEdge.b.y));
+          ctx.stroke();
+        }
+        if (step.conjugatePoint) {
+          ctx.fillStyle = '#e74c3c';
+          ctx.beginPath();
+          ctx.arc(toX(step.conjugatePoint.x), toY(step.conjugatePoint.y), 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      lab6Points.forEach((p) => {
+        ctx.fillStyle = '#0066cc';
+        ctx.beginPath();
+        ctx.arc(toX(p.x), toY(p.y), 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  }, [controlPoints, drawnCurves, activeLab, lab5Overlay, lab6Overlay]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (activeLab === 'lab4') return;
@@ -230,6 +330,13 @@ function App() {
             Лабораторная 5
             <span className="desc">Предварительная обработка полигонов</span>
           </button>
+          <button
+            className={`lab-btn ${activeLab === 'lab6' ? 'active' : ''}`}
+            onClick={() => setActiveLab('lab6')}
+          >
+            Лабораторная 6
+            <span className="desc">Делоне и Вороного</span>
+          </button>
         </div>
       </div>
 
@@ -247,7 +354,8 @@ function App() {
             {activeLab === 'none' && 'Выберите лабораторную работу слева'}
             {activeLab === 'lab4' && 'Загрузите 3D-объект и управляйте преобразованиями с клавиатуры (панель справа)'}
             {activeLab === 'lab5' && 'Выберите режим справа: добавление полигона, отрезок или точка. Кликайте по холсту.'}
-            {activeLab !== 'none' && activeLab !== 'lab4' && activeLab !== 'lab5' && `Нажимайте на холст для добавления контрольных точек (${controlPoints.length})`}
+            {activeLab !== 'none' && activeLab !== 'lab4' && activeLab !== 'lab5' && activeLab !== 'lab6' && `Нажимайте на холст для добавления контрольных точек (${controlPoints.length})`}
+            {activeLab === 'lab6' && 'Расставьте минимум 3 точки, затем нажмите кнопку Делоне или Вороного в панели справа.'}
           </p>
         </div>
 
@@ -281,6 +389,12 @@ function App() {
               setControlPoints={setControlPoints}
               onCurveApply={handleCurveApply}
               setLab5Overlay={setLab5Overlay}
+            />
+          )}
+          {activeLab === 'lab6' && (
+            <Lab6
+              controlPoints={controlPoints}
+              setLab6Overlay={setLab6Overlay}
             />
           )}
         </div>
